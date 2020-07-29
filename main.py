@@ -1,12 +1,12 @@
 from PyQt5.QtWidgets import *
-from view import View
+from view import View, MainWindow
 from model import Model
 import sys
 
 qt_app = QApplication(sys.argv)
 model = Model()
-view = View(model)
-view.showNormal()
+main_window = MainWindow(model)
+main_window.showNormal()
 qt_app.exec_()
 
 
