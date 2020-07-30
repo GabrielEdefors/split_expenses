@@ -3,7 +3,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtSvg import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import *
-from model import TooFewPersonsError
+from model import TooFewPersonsError, Currency
 import os
 
 
@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon(scriptDir + os.path.sep + 'icon.png'))
 
         # View box
-        self.view = View(model)
+        self.view = View(model, self)
         self.setCentralWidget(self.view)
 
         # Borrowed code snippet ====================
@@ -31,26 +31,50 @@ class MainWindow(QMainWindow):
         self.move(frameGm.topLeft())
         # Borrowed code snippet ====================
 
-        # Add menu bar
+        # Add menu bar with file and currency
         self.menu_bar = self.menuBar()
         self.file_menu = self.menu_bar.addMenu('File')
+        self.currency_menu = self.menu_bar.addMenu('Currency')
 
-        # Actions for menu bar
+        # Actions for file menu
         quit_action = QAction('Quit', self)
         self.file_menu.addAction(quit_action)
 
-        # Emit signal to close window if triggered
+        # Actions for Currency menu
+        SEK_currency_action = QAction('SEK', self)
+        dollar_currency_action = QAction('$', self)
+        euro_currency_action = QAction('Euro', self)
+        self.currency_menu.addAction(SEK_currency_action)
+        self.currency_menu.addAction(dollar_currency_action)
+        self.currency_menu.addAction(euro_currency_action)
+
+        # Connect menu bar buttons
         quit_action.triggered.connect(self.close)
+
+        def SEK():
+            self.model.set_currency(Currency.SEK)
+        SEK_currency_action.triggered.connect(SEK)
+
+        def dollar():
+            self.model.set_currency(Currency.dollar)
+        dollar_currency_action.triggered.connect(dollar)
+
+        def euro():
+            self.model.set_currency(Currency.euro)
+        euro_currency_action.triggered.connect(euro)
+
+
 
 
 class View(QGroupBox):
     """ The main window of the GUI
     """
 
-    def __init__(self, model):
+    def __init__(self, model, parent):
         super().__init__()
 
         self.model = model
+        self.parent = parent
 
         # Create subgroups
         self.button_group = ButtonGroup(self.model, self)
@@ -101,9 +125,9 @@ class ButtonGroup(QGroupBox):
 
         self.calculate_button.clicked.connect(calculate)
 
-    def show_result(self, negative_persons):
+    def show_result(self, message):
 
-        nr_negative_persons = len(negative_persons)
+        nr_negative_persons = len(message)
 
         # Remove calculate button
         self.calculate_button.setParent(None)
@@ -119,10 +143,8 @@ class ButtonGroup(QGroupBox):
         self.tableWidget.verticalHeader().hide()
 
         # Add a message for each person owing another person
-        for i, neg_person in enumerate(negative_persons):
-            for pos_person_name, pos_person_value in neg_person.owes.items():
-                row_str = f"{neg_person.name} should pay {pos_person_name} {int(pos_person_value)}"
-                self.tableWidget.setItem(i, 0, QTableWidgetItem(row_str))
+        for i, row_str in enumerate(message):
+            self.tableWidget.setItem(i, 0, QTableWidgetItem(row_str))
 
         self.layout.addWidget(self.tableWidget)
 
@@ -135,10 +157,10 @@ class ButtonGroup(QGroupBox):
         def reset():
             self.model.reset_group()
 
-            # Create a new view and close the previous
-            view = View(self.model)
-            view.showNormal()
-            self.parent.close()
+            # Create a window and close the previous
+            window = MainWindow(self.model)
+            window.showNormal()
+            self.parent.parent.close()
         self.reset_button.clicked.connect(reset)
 
 

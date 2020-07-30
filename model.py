@@ -1,6 +1,7 @@
 from PyQt5.QtCore import *
 from person import Person
 from group import Group
+from enum import Enum
 
 
 class Model(QObject):
@@ -12,6 +13,9 @@ class Model(QObject):
 
     def __init__(self):
         super().__init__()
+
+        # Currency
+        self.currency = "kr"
 
         self.group = Group()
 
@@ -42,7 +46,13 @@ class Model(QObject):
             self.emit_result()
 
     def emit_result(self):
-        self.show_result.emit(self.group.negative_persons)
+        message = []
+
+        for i, neg_person in enumerate(self.group.negative_persons):
+            for pos_person_name, pos_person_value in neg_person.owes.items():
+                message.append(f"{neg_person.name} should pay {pos_person_name} {int(pos_person_value)} {self.currency}")
+
+        self.show_result.emit(message)
 
     def register_expense(self, name, amount):
         self.group.add_person(Person(name, float(amount)))
@@ -50,9 +60,26 @@ class Model(QObject):
     def reset_group(self):
         self.group = Group()
 
+    def set_currency(self, currency: Enum):
+
+        if currency.name == "SEK":
+            self.currency = 'kr'
+        elif currency.euro == "euro":
+            self.currency = "€"
+        else:
+            self.currency = "$"
+
 
 class TooFewPersonsError(ValueError):
 
     def __init__(self):
         pass
+
+
+class Currency(Enum):
+    """Provides different currencies"""
+
+    SEK = 1
+    euro = 2
+    dollar = 3
 
